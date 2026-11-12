@@ -2,6 +2,12 @@
 
 An [agentskills.io](https://agentskills.io)-compatible skill that inspects an external agent skill, audits it for safety and architectural fit against your current repository, and produces a minimally adapted, project-specific version—without stripping the core mechanism that made the original skill useful.
 
+## Aim
+
+**Reuse the expertise in a skill without importing assumptions about someone else's project, process, audience, or taste.**
+
+External skills often mix genuine specialist judgement (what to notice, decide, prevent, and verify) with local assumptions (frameworks, test runners, tone, or house style). Installing them unchanged causes friction; rewriting them blindly strips out what made them work. `skill-adapter` isolates the underlying behaviour that delivers value, adapts only what conflicts with your repository or audience, flags uncertainty and partial coverage honestly, and refuses to fake an adaptation when a core capability is missing.
+
 ## Why Standalone Skill Packaging
 
 `skill-adapter` ships as a standalone skill directory (`skills/skill-adapter/`) rather than a native plugin (`plugin.json`). Because it is a single, self-contained skill with no MCP servers, lifecycle hooks, subagents, or always-on rules, standalone skill packaging works natively across Claude Code, OpenAI Codex CLI, and Google Antigravity (`agy` CLI, Antigravity IDE, and Antigravity 2.0) with a simple copy or symlink and zero idle context overhead. See [docs/installation.md](docs/installation.md) for details.
