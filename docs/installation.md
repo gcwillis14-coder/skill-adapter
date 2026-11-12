@@ -1,122 +1,66 @@
-# Installation & Cross-Agent Setup
+# Installation and Client Setup
 
-`skill-adapter` follows the open [agentskills.io](https://agentskills.io) directory specification (`SKILL.md` + `references/` + `scripts/`). No MCP server, background daemon, or build step is required—installation is a directory copy or symlink.
+The installable package is `skills/skill-adapter/`, containing SKILL.md, references, and a standard-library Python scanner. No MCP server, daemon, hook or build step is required. Python 3.10+ is required for Gate 1; development structural validation additionally requires PyYAML.
 
-Keep `skill-adapter` installed at the **user (global) level** so you can invoke it inside any repository, while installing the **adapted skills it generates** into each target repository's **project-local** skills directory.
+Prefer installing the adapter at user scope and the adapted output at project scope. Review the adapter before trusting its instructions or running its scanner.
 
-## Why Standalone Skill Packaging (Instead of a Plugin)?
+## Compatibility status
 
-`skill-adapter` ships as a standalone skill directory (`skills/skill-adapter/`) rather than a native plugin bundle (`plugin.json`):
+The paths below are candidate conventions carried forward from the original setup guide, not live-client-verified guarantees. Confirm discovery, invocation and frontmatter support in your installed client/version. An agentskills.io-shaped directory does not establish identical behaviour across clients.
 
-- **Single self-contained capability:** Native plugins are designed to bundle multiple components—skills, subagents, always-on rules (`rules/AGENTS.md`), lifecycle hooks (`hooks.json`), and MCP server configs (`mcp_config.json`)—into a single toggleable unit under a global plugin namespace. `skill-adapter` has no MCP servers, no hooks, no subagents, and no always-on rules.
-- **Cross-client portability:** A plain `skills/skill-adapter/` directory works identically across Claude Code, OpenAI Codex CLI, and Google Antigravity (`agy` CLI, Antigravity IDE, and Antigravity 2.0) without manifest conversion, plugin registration, or namespace collisions.
-- **Zero idle overhead:** No plugin manifest or background services are loaded when you are not adapting a skill.
-
-## Discovery Locations by Client
-
-| Client | User-Level Path (Recommended for `skill-adapter`) | Project-Local Path (Recommended for Adapted Output) | Invocation |
+| Client | Candidate user path | Candidate project path | Invocation to verify |
 | :--- | :--- | :--- | :--- |
-| **Claude Code** (CLI & IDE extension) | `~/.claude/skills/skill-adapter/` | `<repo>/.claude/skills/<name>/` | `/skill-adapter` |
-| **OpenAI Codex CLI** | `~/.agents/skills/skill-adapter/` | `<repo>/.agents/skills/<name>/` | `$skill-adapter` |
-| **Google Antigravity** (`agy` CLI, Antigravity IDE, Antigravity 2.0) | `~/.gemini/config/skills/skill-adapter/` | `<repo>/.agents/skills/<name>/` | Explicit prompt or client skill trigger (see below) |
+| Claude Code | ~/.claude/skills/skill-adapter/ | .claude/skills/<name>/ | /skill-adapter |
+| Codex CLI | ~/.agents/skills/skill-adapter/ | .agents/skills/<name>/ | $skill-adapter |
+| Antigravity | ~/.gemini/config/skills/skill-adapter/ | .agents/skills/<name>/ | Explicit prompt/path if supported |
 
-### Google Antigravity Notes (`agy` CLI, Antigravity IDE, Antigravity 2.0)
+The adapter declares disable-model-invocation: true. This requests explicit invocation where supported; it is not a portable guarantee against automatic loading or idle context usage. No external client binaries were tested by the historical v1 evaluations. Claims about Antigravity aliases, precedence and always-on rule behaviour have not been established here.
 
-- **Workspace discovery & precedence:** Antigravity scans `<repo>/.agents/skills/` (as well as `.agent/`, `_agents/`, and `_agent/`) walking up from the current working directory to the repository root. Workspace-scoped customizations take priority over global customizations in `~/.gemini/config/skills/`.
-- **Skills vs. Rules (`GEMINI.md` / `AGENTS.md`):** Skills under `skills/<name>/SKILL.md` use progressive disclosure and load on demand. Directory-based rules in `GEMINI.md`, `AGENTS.md`, and `.agents/rules/*.md` are always active for their directory scope. When an external skill includes standing project conventions that belong in `GEMINI.md` or `AGENTS.md`, `skill-adapter` recommends those edits for your review instead of silently modifying rule files.
+## Copy installation
 
-## Explicit Invocation (`disable-model-invocation: true`)
-
-`skill-adapter` declares `disable-model-invocation: true` in its YAML frontmatter:
-
-- **Zero idle context load:** Adapting an external skill is an intentional workflow, not an ambient coding rule. Disabling automatic model invocation keeps `skill-adapter` out of unrelated turns and avoids accidental auto-triggering.
-- **Explicit trigger:** Invoke it directly with `/skill-adapter` in Claude Code or `$skill-adapter` in Codex CLI.
-- **Fallback for clients without slash commands:** If your client or chat interface does not expose a slash command for `disable-model-invocation: true` skills, invoke it explicitly in your prompt by name or file path—for example:
-
-  ```text
-  Read ~/.gemini/config/skills/skill-adapter/SKILL.md and use it to adapt /path/to/external-skill for this repository.
-  ```
-
-## Step-by-Step Setup
-
-### 1. Clone the Repository
+From the reviewed adapter repository:
 
 ```bash
 git clone https://github.com/gcwillis14-coder/skill-adapter.git
 cd skill-adapter
-```
 
-### 2. Install for Your Active Client(s)
-
-> [!NOTE]
-> **Symlinks vs. `cp -r` (Windows & Sandbox Caveat):**
-> Symlinking (`ln -s`) lets you update via `git pull`, but on **Windows** symlinks require Developer Mode or elevated privileges, and inside **sandboxed or containerized agents** symlinks pointing outside the workspace root may not be readable. In those environments, copy the directory with `cp -r` instead.
-
-#### Option A: Claude Code
-
-```bash
+# Choose the location verified for your client; example for Claude Code:
 mkdir -p ~/.claude/skills
 cp -r skills/skill-adapter ~/.claude/skills/skill-adapter
-# Or symlink (POSIX, non-sandboxed):
-# ln -s "$(pwd)/skills/skill-adapter" ~/.claude/skills/skill-adapter
+
+# Alternative candidate for Codex:
+# mkdir -p ~/.agents/skills
+# cp -r skills/skill-adapter ~/.agents/skills/skill-adapter
+
+# Antigravity candidate; verify discovery before using:
+# mkdir -p ~/.gemini/config/skills
+# cp -r skills/skill-adapter ~/.gemini/config/skills/skill-adapter
 ```
 
-#### Option B: OpenAI Codex CLI (and `.agents/skills` Compatible Tools)
+Use a fresh destination. Copying over an existing directory can retain obsolete files. For updates, stage a fresh copy, review changes and any local edits, then explicitly replace the old installation after checking the exact path. Do not blindly merge directory copies.
 
-```bash
-mkdir -p ~/.agents/skills
-cp -r skills/skill-adapter ~/.agents/skills/skill-adapter
-# Or symlink (POSIX, non-sandboxed):
-# ln -s "$(pwd)/skills/skill-adapter" ~/.agents/skills/skill-adapter
+Symlinks are optional for this trusted adapter installation, but require platform support and may be inaccessible in sandboxes. This does not permit symlinks in imported source snapshots or adapted output.
+
+## Invocation and trusted scanner path
+
+Invoke by your client's supported command or explicitly read the trusted installed SKILL.md by absolute path. The adapter must resolve its scanner from that installation, never from the current repository or imported source:
+
+```text
+"/absolute/trusted/python3" -I -S "/absolute/trusted/skill-adapter/scripts/gate1_scan.py" "/absolute/private/source-snapshot" --json
 ```
 
-#### Option C: Google Antigravity (`agy` CLI, Antigravity IDE, Antigravity 2.0)
+Those are placeholders, not literal executable paths. Do not use an interpreter, scanner, virtual environment or wrapper supplied by the imported source. If trusted paths cannot be established, stop. Read the [security reference](../skills/skill-adapter/references/security-boundaries.md) for clean acquisition, content pinning, scanner limits and approval boundaries.
 
-Global installation (available across all workspaces):
+Scanner PASS is only hygiene. Every imported file still needs semantic review, and the model conducting that review can itself be targeted by prompt injection. Imported scripts are inspected as text, non-executable by default, and never run merely to validate them.
 
-```bash
-mkdir -p ~/.gemini/config/skills
-cp -r skills/skill-adapter ~/.gemini/config/skills/skill-adapter
-```
+## Updates, re-adaptation and removal
 
-Or workspace-scoped installation (inside a specific repository):
+Review adapter updates before replacing your trusted installation. For a symlinked trusted checkout, review the incoming Git changes rather than assuming every pull is safe.
 
-```bash
-mkdir -p <repo>/.agents/skills
-cp -r skills/skill-adapter <repo>/.agents/skills/skill-adapter
-```
+When updating an adapted project skill, supply its installed version, the exact old upstream baseline and new pinned upstream. If the baseline cannot be recovered, disclose a two-way review. See [re-adaptation](../skills/skill-adapter/references/readapt-guide.md).
 
-## Lifecycle: Updating, Re-Adapting, and Removing
+To uninstall, remove only the verified adapter directory or symlink you installed; do not run a blanket deletion across every client location. Already-generated project skills remain independent.
 
-### Updating `skill-adapter`
+## Verification evidence
 
-- If installed via `ln -s`, run `git pull` in your clone.
-- If installed via `cp -r`, re-run `cp -r skills/skill-adapter <target-skills-dir>/` after pulling updates.
-
-### Re-Adapting an Existing Project Skill
-
-When your repository stack changes or the upstream source skill is updated:
-
-1. Check the YAML frontmatter `metadata:` provenance fields (`adapted_from`, `source_ref`, `adapted_date`, `key_overrides`) at the top of your project's adapted `SKILL.md`.
-2. Run `skill-adapter` against the updated source skill and point it at your existing adapted skill directory so its three-way reconciliation workflow ([readapt-guide.md](../skills/skill-adapter/references/readapt-guide.md)) merges upstream changes while preserving valid local overrides.
-
-### Uninstalling
-
-Remove the `skill-adapter` directory or symlink from your user skills folder:
-
-```bash
-rm -rf ~/.claude/skills/skill-adapter ~/.agents/skills/skill-adapter ~/.gemini/config/skills/skill-adapter
-```
-
-Project-local adapted skills already generated inside your repositories remain self-contained and continue working independently.
-
-## Tested Compatibility
-
-The v1 verification suite ([tests/results.md](../tests/results.md)) verified the following in an **offline, sandboxed Python 3.15 environment** against `skills/skill-adapter/SKILL.md` (116 lines) and its bundled `references/`:
-
-- **Structural validation (`python3 tests/validate_skills.py`):** 10/10 passed across `skills/skill-adapter/` and all 9 fixture skills, and 5/5 generated adapted skills passed (`EVAL-01`, `02`, `05`, `06`, `07`).
-- **Validator unit tests (`python3 -m unittest discover -s tests -v`):** 7/7 tests passed.
-- **Behavioral evaluations (`EVAL-01`–`EVAL-07`):** 7/7 passed across No Skill vs. Unadapted Original vs. Adapted Skill comparisons, covering Gate 1 security rejection (`EVAL-04`), Gate 2 unadaptable hard stop (`EVAL-03`), degradable manual fallbacks (`EVAL-01`, `02`, `06`, `07`), multi-file `scripts/` + `references/` + `.agents/skills/` collision scoping (`EVAL-06`), and v2 `metadata:` re-adaptation (`EVAL-07`).
-- **Scope note:** Evaluations ran against synthetic fixture repositories (`tests/fixtures/`) without live external CLI installations of Claude Code, OpenAI Codex CLI, or Google Antigravity, without `node_modules/`, and without outbound network access. Client discovery paths above follow documented client conventions and were not tested in live external client binaries during this run.
-
-See [README.md](../README.md) for an overview and [skills/skill-adapter/SKILL.md](../skills/skill-adapter/SKILL.md) for the skill definition.
+[Historical v1 results](../tests/results.md) cover EVAL-01–07 against an older skill, not this hardening revision. EVAL-08 exists as a fixture but has no result in that report. Behavioural evaluations and live Claude Code, Codex CLI or Antigravity compatibility have not been rerun for this revision. Scanner unit tests, structural validation and behavioural/live-client checks are distinct forms of evidence; passing one does not establish the others.

@@ -1,43 +1,38 @@
 # Re-Adapting & Updating an Existing Adapted Skill
 
-Run this procedure in Step 4 when the target skill directory already exists and carries `metadata.adapted_from` in its `SKILL.md` frontmatter.
+Run this procedure in Step 4 when the target skill already carries metadata.adapted_from. Read existing files as static text; installation approval does not authorise execution.
 
-## 1. Inspect the Installed Adapted Skill
+## 1. Establish the baseline and local changes
 
-1. Read the existing `SKILL.md` and every file in its `references/` and `scripts/` subdirectories.
-2. Extract frontmatter `metadata:` fields:
-   - `adapted_from`: upstream skill name or URL
-   - `source_ref`: previously adapted version, tag, commit SHA, or date
-   - `adapted_date`: date of the previous adaptation
-   - `key_overrides`: recorded local stack, command, and fallback overrides
-3. List every local difference from a generic skill (translated commands, scoped paths, manual fallbacks, custom triggers, adapted scripts/references).
+1. Read the installed SKILL.md and every bundled file, including local post-install edits.
+2. Extract adapted_from, source_ref, source_path, source_digest, adapted_date, and key_overrides. Legacy metadata may lack an immutable ref/digest.
+3. Obtain the exact previous upstream baseline identified by that provenance, using Gate 1 trust rules. A tag/date or short key_overrides summary cannot reconstruct the old source reliably.
+4. Compare the old upstream baseline to the installed adaptation to identify local changes: translated commands/paths, manual fallbacks, triggers, scripts, references, and later edits.
+5. If the old baseline cannot be recovered, explicitly label the operation a two-way review. State that exact upstream deltas are unverified and ask about ambiguous changes rather than inventing history.
 
-## 2. Re-Run Gates on the Updated Upstream & Repo
+## 2. Re-run gates on the new upstream and project
 
-1. Run **Step 1 (Gate 1)** static-text safety review on the new upstream directory first—treat every upstream update as untrusted until verified.
-2. Run **Step 2** source analysis on the new upstream version to identify added, modified, and removed instructions or bundled files.
-3. Refresh **Step 3** discovery against the current repository state to verify whether each prior local override still matches Tier 1–3 evidence.
+1. Run Step 1 on a newly pinned private upstream snapshot. Treat every update as untrusted; retain that same snapshot through installation.
+2. Run Step 2 to identify mechanisms, dependencies, and adaptation boundaries.
+3. Refresh Step 3 project evidence to check whether prior overrides remain valid.
 
-## 3. Three-Way Reconciliation Rules
+## 3. Three-way reconciliation
 
-Reconcile **(A) Previous adapted skill + `key_overrides`**, **(B) New upstream source**, and **(C) Current repository evidence**:
+Use three content inputs: (A) exact previous upstream, (B) installed adapted/local version, and (C) new pinned upstream. A-to-B identifies local edits; A-to-C identifies upstream edits. Current project evidence constrains the reconciliation but is not a substitute for the upstream baseline.
 
-| Upstream Change | Local Override State | Action |
+| Upstream change | Local state | Action |
 | :--- | :--- | :--- |
-| **Added rule / step** | Compatible with repo | Adopt the new step; translate any generic commands/paths to verified local equivalents. |
-| **Added rule / step** | Conflicts with Tier 1 rule | Drop or make conditional; document the conflict in the brief. |
-| **Modified shared rule** | Active `key_override` in same section | Keep the local stack override while integrating genuine upstream improvements to the core mechanism. |
-| **Modified or unchanged** | Prior override now stale (repo changed) | Update or retire the override to match current Tier 1–3 evidence. |
-| **Removed section** | Dependent local override exists | Retain only if a verified local rule still requires it; otherwise drop cleanly. |
-| **Added / updated bundled file** | Exists in `references/` or `scripts/` | Audit safety (Step 1), merge local adaptations if modified locally, or copy if compatible. |
+| Added rule/step | Compatible with project | Adopt; translate only incompatible paths/tools. |
+| Added rule/step | Conflicts with explicit project rules | Scope or drop with evidence; hard-stop if the core mechanism cannot survive. |
+| Modified shared rule | Same section adapted locally | Integrate upstream improvements while preserving valid overrides; explicitly resolve overlapping conflicts. |
+| Modified or unchanged | Prior override now stale | Update/retire it against current evidence. |
+| Removed section | Local override depends on it | Retain only if a verified local requirement still needs it. |
+| Added/updated bundled file | Existing local file | Audit, compare with baseline, merge local changes, and request per-file approval for retained flags. |
 
-## 4. Update Provenance & Adaptation Brief
+Do not silently let key_overrides win a conflicting mechanism change. Apply the substitution equivalence check and disclose partial coverage. Without A, call this a two-way review, not a three-way merge.
 
-- Update frontmatter `metadata:` in the draft:
-  - Keep `adapted_from` consistent.
-  - Advance `source_ref` to the new upstream ref/date and `adapted_date` to today's date.
-  - Refresh `key_overrides` to reflect the active set of local overrides.
-- Include an **Upstream Delta & Override Preservation** subsection in the Step 5 Adaptation Brief listing:
-  1. What changed upstream since the previous `source_ref`.
-  2. Which local `key_overrides` were preserved, updated, or retired.
-  3. Any newly introduced degradations or bundled-file updates requiring confirmation.
+## 4. Update provenance and obtain approval
+
+Keep adapted_from consistent; advance source_ref to the full new commit or local snapshot digest, record source_path and source_digest, set adapted_date, and refresh key_overrides.
+
+The brief must state baseline availability, verified upstream deltas (or their absence), preserved/updated/retired overrides, unresolved conflicts, degradations, and bundled-file approvals required. Re-scan the same new snapshot before installation; changes invalidate review/approval. Review final hashes, destination paths, and permissions. Never replace the reviewed snapshot with a fresh clone of the same URL.

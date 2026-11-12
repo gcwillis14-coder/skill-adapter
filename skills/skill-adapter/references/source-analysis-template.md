@@ -6,7 +6,9 @@ Complete every section in Step 2 before inspecting the target repository. Ground
 
 - **Skill Name:** `<name from YAML frontmatter>`
 - **Origin:** `<URL, repository path, or local directory>`
-- **Version / Ref:** `<tag, commit SHA, or inspection date>`
+- **Version / Ref:** `<full Git commit SHA or local snapshot SHA-256; tag/date only as extra labels>`
+- **Source Path / Digest:** `<selected subdirectory and scanner snapshot_sha256>`
+- **Review Scope / Manifest:** `<audited files, per-file hashes/permissions, excluded root Git metadata, governing suite files>`
 - **Bundled Assets:** `<list files under references/, scripts/, examples/, resources/, assets/, or "None">`
 
 ## 2. Purpose, Trigger Audit & Behavioral Expertise Lens
