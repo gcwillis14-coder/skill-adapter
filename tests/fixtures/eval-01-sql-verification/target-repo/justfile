@@ -1,0 +1,5 @@
+test:
+	uv run pytest
+
+check-db sql:
+	uv run python -c "print('EXPLAIN wrapper placeholder for:', '{{sql}}')"

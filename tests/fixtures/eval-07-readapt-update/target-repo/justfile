@@ -1,0 +1,5 @@
+api-test:
+	uv run pytest tests/api/
+
+openapi-diff:
+	uv run python -c "print('Comparing FastAPI OpenAPI schema against openapi.json')"

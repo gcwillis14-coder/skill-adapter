@@ -1,0 +1,22 @@
+# OS and editor artifacts
+.DS_Store
+Thumbs.db
+*~
+*.swp
+*.swo
+.idea/
+.vscode/
+
+# Python / evaluation runner artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.venv/
+venv/
+
+# Temporary files
+*.tmp
+*.bak
+*.log
+tmp/
