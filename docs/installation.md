@@ -42,7 +42,7 @@ Keep `skill-adapter` installed at the **user (global) level** so you can invoke 
 ### 1. Clone the Repository
 
 ```bash
-git clone <repo-url>
+git clone https://github.com/gcwillis14-coder/skill-adapter.git
 cd skill-adapter
 ```
 
