@@ -1,6 +1,6 @@
 # Installation & Cross-Agent Setup
 
-`skill-adapter` follows the open [agentskills.io](https://agentskills.io) directory specification (`SKILL.md` + `references/`). No MCP server, background daemon, or build step is required—installation is a directory copy or symlink.
+`skill-adapter` follows the open [agentskills.io](https://agentskills.io) directory specification (`SKILL.md` + `references/` + `scripts/`). No MCP server, background daemon, or build step is required—installation is a directory copy or symlink.
 
 Keep `skill-adapter` installed at the **user (global) level** so you can invoke it inside any repository, while installing the **adapted skills it generates** into each target repository's **project-local** skills directory.
 

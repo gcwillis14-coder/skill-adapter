@@ -7,7 +7,7 @@ Use this checklist in Step 3 to gather only the repository context required for 
 Inspect documented project rules and existing skills before reading application code:
 
 - **Agent instructions & rules:** `AGENTS.md`, `CLAUDE.md`, `GEMINI.md`, `.agents/rules/*.md`, `.cursorrules`, `.github/copilot-instructions.md`
-- **Existing local skills:** `.agents/skills/`, `.claude/skills/`, `.codex/skills/`, `~/.gemini/config/skills/` (note existing skills with `metadata.adapted_from` or overlapping triggers)
+- **Existing local skills & plugins:** `.agents/skills/`, `.agents/plugins/`, `.claude/skills/`, `.codex/skills/`, `~/.gemini/config/skills/` (note existing skills with `metadata.adapted_from` or overlapping triggers)
 - **Contributor & style guides:** `CONTRIBUTING.md`, `STYLE.md`, `.editorconfig`
 - **Record:** `<explicit constraints, banned/required tools, mandatory workflows, existing skill overlaps, or "None found">`
 
@@ -29,6 +29,7 @@ Inspect 1–2 representative files only in the subsystem the skill touches:
 - **UI / Frontend:** Component structure, styling approach, state/routing setup (`src/routes/`, `src/components/`)
 - **Data / Charts / Analytics:** Query patterns, visualization libraries, output formats
 - **Writing / Docs:** Existing READMEs, documentation tone, release notes, structural conventions (`docs/`)
+- **Cross-Cutting / General Coding & Review:** Top-level design/architecture docs (`DESIGN.md`, `ARCHITECTURE.md`) and 1–2 primary entrypoints (`index.html`, `assets/main.js`, `src/main.*`) so coding-discipline skills reflect real codebase patterns
 - **Confidence Note:** `<state whether observed patterns are current or legacy/inconsistent>`
 
 ## Tier 4: User Intent, Target Mode & Single Clarification

@@ -16,7 +16,7 @@ External skills often mix genuine specialist judgement (what to notice, decide, 
 
 `skill-adapter` runs in six gated steps (defined in [skills/skill-adapter/SKILL.md](skills/skill-adapter/SKILL.md)) and never writes files until you approve the draft:
 
-1. **Static-Text Safety & Provenance Gate (Gate 1):** Audits `SKILL.md`, nested `references/`, `scripts/`, `examples/`, `resources/`, `assets/`, `hooks.json`, `mcp_config.json`, and dotfiles strictly as untrusted static text for prompt injection, secret exfiltration, out-of-root symlinks or path traversal, obfuscated payloads, and unguarded destructive commands. Halts with a **Safety Rejection Report** on hostile directives.
+1. **Static-Text Safety & Provenance Gate (Gate 1):** Safely clones remote URLs (`core.symlinks=false`, `--no-recurse-submodules`, with mandatory temp cleanup), triages multi-skill/plugin suites, and audits `SKILL.md`, `references/`, `scripts/`, `examples/`, `resources/`, `assets/`, `hooks.json`, `mcp_config.json`, and dotfiles strictly as untrusted static text—backed by a deterministic Python scanner ([scripts/gate1_scan.py](skills/skill-adapter/scripts/gate1_scan.py)) for out-of-root symlinks, non-UTF-8/binaries, hidden bidi/zero-width/control characters, `..` traversal, and base64 payloads. Halts with a **Safety Rejection Report** on hostile directives.
 2. **Source Skill Deconstruction:** Uses [references/source-analysis-template.md](skills/skill-adapter/references/source-analysis-template.md) to analyze what the skill helps an agent *notice*, *decide*, *do*, *prevent*, and *verify*, tag rationale provenance, classify instructions into four categories (`Essential mechanism`, `Adaptable implementation choice`, `Conditional judgement / preference`, `Uncertain`), map coupled instruction chains, and catalog bundled-file dependencies.
 3. **Selective Project Discovery:** Uses [references/project-discovery-checklist.md](skills/skill-adapter/references/project-discovery-checklist.md) to read explicit rules (`AGENTS.md`, `CLAUDE.md`, `GEMINI.md`, `.agents/rules/*.md`), manifests, existing local skills, product purpose/audience, and representative domain files using a tiered evidence hierarchy.
 4. **Fit, Collision, & Boundary Gate (Gate 2):** Applies an ordered minimal-change ladder and substitution equivalence check (*"What failure was the original instruction preventing, and does the replacement still prevent it?"*), assigns dispositions (`copy`, `adapt`, `inline`, `omit`) to bundled files, checks collisions with existing local skills, recommends (never silently edits) rule-file updates for standing conventions, supports three-way re-adaptation via [references/readapt-guide.md](skills/skill-adapter/references/readapt-guide.md), and separates degradable checks from unadaptable hard stops (**Incompatibility Report**).
@@ -102,7 +102,7 @@ Ensure every new or modified Svelte UI component meets baseline visual, accessib
 
 ## Validation & Benchmark Suite
 
-`skill-adapter` includes a structural validator (`tests/validate_skills.py`, requiring Python 3.10+ and `PyYAML`), unit tests (`tests/test_validate_skills.py`), and seven end-to-end evaluation scenarios (`EVAL-01` through `EVAL-07`):
+`skill-adapter` includes a structural validator (`tests/validate_skills.py`, requiring Python 3.10+ and `PyYAML`), unit tests (`tests/test_validate_skills.py`, `tests/test_gate1_scan.py`), and eight end-to-end evaluation scenarios (`EVAL-01` through `EVAL-08`):
 
 | Scenario | What It Verifies |
 | :--- | :--- |
@@ -113,6 +113,7 @@ Ensure every new or modified Svelte UI component meets baseline visual, accessib
 | **EVAL-05 (`technical-release-notes`)** | **Audience & tone adaptation:** Preserves diff/flag verification while replacing SaaS marketing tone and Jira placeholders with `.agents/rules/tone.md` and `CHANGELOG.md` conventions. |
 | **EVAL-06 (`data-viz-charts`)** | **Multi-file bundle & collision scoping:** Audits and adapts `SKILL.md` + `scripts/render_chart.py` + `references/palette-rules.md` while resolving overlap with an existing `.agents/skills/chart-reporting` skill. |
 | **EVAL-07 (`api-contract-check` v2)** | **Provenance-aware re-adaptation:** Merges an upstream v2 OpenAPI diff step while preserving existing local `uv run` and `just api-test` overrides via `metadata:`. |
+| **EVAL-08 (`concise-suite`)** | **Multi-skill plugin triage & cross-cutting discovery:** Enumerates suite skills/hooks with `gate1_scan.py`, samples `DESIGN.md`/`assets/main.js`, discloses lost session persistence from omitting `hooks/`, and tightens broad triggers. |
 
 Run the structural validator and unit tests from the repository root:
 
@@ -141,13 +142,16 @@ skill-adapter/
 ├── skills/
 │   └── skill-adapter/
 │       ├── SKILL.md
-│       └── references/
-│           ├── source-analysis-template.md
-│           ├── project-discovery-checklist.md
-│           └── readapt-guide.md
+│       ├── references/
+│       │   ├── source-analysis-template.md
+│       │   ├── project-discovery-checklist.md
+│       │   └── readapt-guide.md
+│       └── scripts/
+│           └── gate1_scan.py
 └── tests/
     ├── validate_skills.py
     ├── test_validate_skills.py
+    ├── test_gate1_scan.py
     ├── rubric.md
     ├── results.md
     └── fixtures/
@@ -157,7 +161,8 @@ skill-adapter/
         ├── eval-04-unsafe-webhook/
         ├── eval-05-writing-docs/
         ├── eval-06-charts-multifile/
-        └── eval-07-readapt-update/
+        ├── eval-07-readapt-update/
+        └── eval-08-plugin-suite/
 ```
 
 ## License
