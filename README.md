@@ -1,77 +1,98 @@
 # skill-adapter
 
-An [agentskills.io](https://agentskills.io)-compatible skill that inspects an external agent skill, audits it for safety and architectural fit against your current repository, and produces a minimally adapted, project-specific version—without stripping the core mechanism that made the original skill useful.
+> Customise and adapt external agent skills to your project's stack, tools, and rules—without stripping the reason you're adding it in the first place.
 
-## Aim
+An [agentskills.io](https://agentskills.io)-compatible skill that inspects an external agent skill, audits it for safety and architectural fit against your repository, and produces a clean, project-specific adaptation.
 
-**Reuse the expertise in a skill without importing assumptions about someone else's project, process, audience, or taste.**
+See [SCOPE.md](SCOPE.md) for what `skill-adapter` adapts and our explicit non-goals.
 
-External skills often mix genuine specialist judgement (what to notice, decide, prevent, and verify) with local assumptions (frameworks, test runners, tone, or house style). Installing them unchanged causes friction; rewriting them blindly strips out what made them work. `skill-adapter` isolates the underlying behaviour that delivers value, adapts only what conflicts with your repository or audience, flags uncertainty and partial coverage honestly, and refuses to fake an adaptation when a core capability is missing.
+---
 
 ## Why Standalone Skill Packaging
 
-`skill-adapter` ships as a standalone skill directory (`skills/skill-adapter/`) rather than a native plugin (`plugin.json`). Because it is a self-contained skill with no MCP servers, lifecycle hooks, subagents, or always-on rules, standalone skill packaging works natively across **Claude Code**, **OpenAI Codex CLI**, **Google Antigravity**, **Cursor**, **Windsurf**, **GitHub Copilot**, **OpenCode**, and any `agentskills.io`-compatible tool with zero idle context overhead. See [docs/installation.md](docs/installation.md) for all client paths.
+`skill-adapter` ships as a standalone skill directory (`skills/skill-adapter/`) rather than a native plugin bundle:
 
-## How It Works
+- **Follows `agentskills.io`:** Simple directory layout (`SKILL.md` + `references/` + `scripts/`) requiring no background services, daemons, or compile steps.
+- **Tested & Verified:** Tested and confirmed in **OpenAI Codex CLI** and **Google Antigravity**.
+- **Untested Community Targets:** Built on open standards, so it should work in **Claude Code**, **Cursor**, **Windsurf**, **GitHub Copilot**, and **OpenCode**—untested; please open an issue if you encounter friction.
+- **Zero Idle Overhead:** Declares `disable-model-invocation: true` so it never consumes context tokens until you explicitly invoke it.
 
-`skill-adapter` runs in six gated steps (defined in [skills/skill-adapter/SKILL.md](skills/skill-adapter/SKILL.md)) and never writes files until you approve the draft:
-
-1. **Static-Text Safety & Provenance Gate (Gate 1):** Accepts local skill folders, remote GitHub repo/subdirectory URLs (safely cloned with `core.symlinks=false` and `--no-recurse-submodules`, with mandatory temp cleanup), and multi-skill/plugin suites. Audits `SKILL.md`, `references/`, `scripts/`, `examples/`, `resources/`, `assets/`, `hooks.json`, `mcp_config.json`, and dotfiles strictly as untrusted static text—optionally backed by an isolated Python scanner ([scripts/gate1_scan.py](skills/skill-adapter/scripts/gate1_scan.py))—for out-of-root symlinks, non-UTF-8/binaries, hidden bidi/zero-width/control characters, `..` traversal, base64 payloads, prompt injection, and secret exfiltration. Halts with a **Safety Rejection Report** on hostile directives.
-2. **Source Skill Deconstruction:** Uses [references/source-analysis-template.md](skills/skill-adapter/references/source-analysis-template.md) to analyze what the skill helps an agent *notice*, *decide*, *do*, *prevent*, and *verify*, tag rationale provenance, classify instructions into four categories (`Essential mechanism`, `Adaptable implementation choice`, `Conditional judgement / preference`, `Uncertain`), map coupled instruction chains, and catalog bundled-file dependencies.
-3. **Selective Project Discovery:** Uses [references/project-discovery-checklist.md](skills/skill-adapter/references/project-discovery-checklist.md) to read explicit rules (`AGENTS.md`, `CLAUDE.md`, `GEMINI.md`, `.agents/rules/*.md`), manifests, existing local skills, product purpose/audience, and representative domain files using a tiered evidence hierarchy.
-4. **Fit, Collision, & Boundary Gate (Gate 2):** Applies an ordered minimal-change ladder and substitution equivalence check (*"What failure was the original instruction preventing, and does the replacement still prevent it?"*), assigns dispositions (`copy`, `adapt`, `inline`, `omit`) to bundled files, checks collisions with existing local skills, recommends (never silently edits) rule-file updates for standing conventions, supports three-way re-adaptation via [references/readapt-guide.md](skills/skill-adapter/references/readapt-guide.md), and separates degradable checks from unadaptable hard stops (**Incompatibility Report**).
-5. **Draft Adapted Skill & Adaptation Brief:** Outputs an **Adaptation Brief** (`Preserved / Changed / Uncertain`, partial-coverage disclosures, triggers/collisions/recommended rule edits, and trade-offs/manual fallbacks) alongside the adapted skill using YAML frontmatter `metadata:` provenance so the `SKILL.md` body stays clean.
-6. **Verified Installation:** Confirms every command, path, and one-level relative link resolves in the target repository before writing files on explicit user confirmation, and delivers 1–3 distinctive-behaviour checks covering **Project Fit** and **Expertise Retention**.
+---
 
 ## Quick Start
 
-1. **Install `skill-adapter`** via `npx skills` or by copying `skills/skill-adapter` into your agent's global skills directory (see [docs/installation.md](docs/installation.md) for Cursor, Windsurf, GitHub Copilot, OpenCode, and workspace-local paths):
+### 1. Install `skill-adapter`
 
-   ```bash
-   # Option A: via skills.sh / agentskills.io CLI
-   npx skills add https://github.com/gcwillis14-coder/skill-adapter
+#### Tested Clients
 
-   # Option B: clone & copy
-   git clone https://github.com/gcwillis14-coder/skill-adapter.git
-   cd skill-adapter
+```bash
+# OpenAI Codex CLI / shared .agents/skills
+mkdir -p ~/.agents/skills && cp -r skills/skill-adapter ~/.agents/skills/skill-adapter
 
-   # Claude Code
-   mkdir -p ~/.claude/skills && cp -r skills/skill-adapter ~/.claude/skills/skill-adapter
+# Google Antigravity (global)
+mkdir -p ~/.gemini/config/skills && cp -r skills/skill-adapter ~/.gemini/config/skills/skill-adapter
+```
 
-   # OpenAI Codex CLI / OpenCode / shared .agents/skills clients
-   mkdir -p ~/.agents/skills && cp -r skills/skill-adapter ~/.agents/skills/skill-adapter
+#### Untested Clients (Should Work — Open an Issue)
 
-   # Google Antigravity (global)
-   mkdir -p ~/.gemini/config/skills && cp -r skills/skill-adapter ~/.gemini/config/skills/skill-adapter
-   ```
+```bash
+# Claude Code
+mkdir -p ~/.claude/skills && cp -r skills/skill-adapter ~/.claude/skills/skill-adapter
 
-2. **Invoke it inside your target repository** (`/skill-adapter` in Claude Code, `$skill-adapter` in Codex CLI, or an explicit prompt in clients without slash commands):
+# Cursor
+mkdir -p ~/.cursor/skills && cp -r skills/skill-adapter ~/.cursor/skills/skill-adapter
 
-   ```text
-   Use skill-adapter to adapt /path/to/external-skill for this project. I want to use it when building or polishing Svelte components.
-   ```
+# Windsurf
+mkdir -p ~/.codeium/windsurf/skills && cp -r skills/skill-adapter ~/.codeium/windsurf/skills/skill-adapter
 
-3. **Review the Adaptation Brief**, approve the installation path (`.agents/skills/<name>/` or `.claude/skills/<name>/`), and run the suggested distinctive-behaviour checks on a real repository task.
+# GitHub Copilot (VS Code)
+mkdir -p ~/.copilot/skills && cp -r skills/skill-adapter ~/.copilot/skills/skill-adapter
+```
 
-### Re-Adapting When Upstream or Your Repo Changes
+Or install via `npx skills`:
 
-Because every adapted skill records provenance in YAML frontmatter (`metadata.adapted_from`, `source_ref`, `adapted_date`, `key_overrides`), you can point `skill-adapter` at an updated upstream skill and your existing project skill directory to run a three-way reconciliation ([references/readapt-guide.md](skills/skill-adapter/references/readapt-guide.md)) that adopts upstream improvements while keeping valid local overrides intact.
+```bash
+npx skills add https://github.com/gcwillis14-coder/skill-adapter
+```
+
+See [docs/installation.md](docs/installation.md) for detailed paths, symlink guidance, and project-local setup.
+
+---
+
+### 2. Invoke Inside Your Target Repository
+
+Run `skill-adapter` via command or prompt:
+
+```text
+Use skill-adapter to adapt /path/to/external-skill for this project. I want to use it when building or polishing Svelte components.
+```
+
+### 3. Review the Adaptation Brief
+
+`skill-adapter` runs in six gated steps (defined in [skills/skill-adapter/SKILL.md](skills/skill-adapter/SKILL.md)) and never writes files without your confirmation:
+
+1. **Gate 1 (Static Hygiene Audit):** Scans source files as untrusted text for path traversal, out-of-root symlinks, non-UTF-8 bytes, and hidden bidi/control characters. *(Scanner PASS is a static hygiene check, not a semantic safety verdict.)*
+2. **Source Skill Deconstruction:** Identifies what the skill helps an agent notice, decide, do, prevent, and verify.
+3. **Project Discovery:** Reads repository rules (`AGENTS.md`, `GEMINI.md`, `CLAUDE.md`), configs, and toolchains using a strict evidence hierarchy.
+4. **Gate 2 (Fit & Boundary Audit):** Applies the minimal-change ladder, checks collisions with local skills, recommends standing-rule edits, and halts on missing platform primitives instead of faking them.
+5. **Draft Adapted Skill & Adaptation Brief:** Presents an **Adaptation Brief** (`Preserved / Changed / Uncertain`) alongside the adapted draft with clean YAML frontmatter `metadata:`.
+6. **Verified Installation:** Writes approved files only after explicit confirmation (with bundled scripts defaulting to non-executable `0644`) and provides 1–3 distinctive verification prompts.
+
+---
 
 ## Worked Example
 
-The example below mirrors `EVAL-02` ([tests/fixtures/eval-02-ui-polish](tests/fixtures/eval-02-ui-polish) and [tests/results.md](tests/results.md)): adapting a generic **Frontend Visual Polish** skill (`frontend-visual-polish`) that enforces WCAG contrast ratios, `:focus-visible` states, and responsive checks—but assumes **React**, **Tailwind CSS**, `npm run lint`, and `npm run test:ui`—into a **SvelteKit + TypeScript + `just`** repository.
+Adapting a generic **Frontend Visual Polish** skill (`frontend-visual-polish`)—which enforces WCAG contrast ratios, `:focus-visible` states, and responsive checks, but assumes **React**, **Tailwind CSS**, and `npm run test:ui`—into a **SvelteKit + TypeScript + `just`** repository:
 
 ### 1. Adaptation Brief Output
 
-- **Source contribution:** Enforces baseline accessibility (4.5:1 body text contrast, 3:1 large text/boundaries, semantic `<button>`/`<a>` elements, explicit `:hover`/`:focus-visible`/`:disabled` states) and 375px/1280px responsive overflow checks before completing UI tasks.
+- **Source contribution:** Enforces baseline accessibility (4.5:1 body text contrast, 3:1 large text/boundaries, semantic `<button>`/`<a>` elements, explicit `:hover`/`:focus-visible`/`:disabled` states) and 375px/1280px responsive overflow checks.
 - **Project needs:** Per `GEMINI.md`, `package.json`, and `justfile`, this project uses SvelteKit with Svelte 5 runes, TypeScript, scoped `<style>` blocks (no React, no Tailwind), and `just check` / `just test` for verification.
-- **Summary of changes & file manifest:**
-  - *Preserved:* Contrast thresholds (4.5:1 / 3:1), interactive state requirements, semantic `<button>`/`<a>` rules, and 375px/1280px viewport checks.
-  - *Changed:* Translated React `useState`/`onClick` and Tailwind class idioms (`focus-visible:ring-2`) to Svelte 5 runes (`$state`, `$derived`, `$props()`), native `onclick={...}`, and scoped `<style>` CSS; mapped `npm run lint` / `npm run test:ui` to `just check` and `just test`. Equivalence disclosure: `just check`/`just test` cover static checks and unit tests, leaving headless browser viewport verification as partial coverage.
-  - *Uncertain:* Exact `375px` / `1280px` breakpoint constants lack author rationale and are preserved provisionally alongside an explicit manual browser check.
-  - *Bundled-file manifest:* Create `SKILL.md` (single-file skill; no bundled `references/` or `scripts/`).
-- **Triggers, collisions, & recommended rule edits:** No conflicting local UI skill found; scoped `description` to Svelte UI components; no `GEMINI.md` edits required.
-- **Trade-offs & manual fallbacks:** This repository has no automated headless visual/viewport test runner (`test:ui`/Playwright absent). Responsive checks at 375px and 1280px, keyboard focus navigation, and contrast remain manual browser verification steps in `npm run dev`.
+- **Summary of changes:**
+  - *Preserved:* Contrast thresholds (4.5:1 / 3:1), interactive state requirements, semantic elements, and 375px/1280px viewport checks.
+  - *Changed:* Translated React `useState`/`onClick` and Tailwind classes to Svelte 5 runes (`$state`, `$derived`, `$props()`), native `onclick={...}`, and scoped `<style>` CSS; mapped `npm run lint` / `npm run test:ui` to `just check` and `just test`.
+  - *Uncertain:* Exact `375px` / `1280px` breakpoint constants lack author rationale and are preserved provisionally alongside a manual browser check.
+- **Trade-offs & manual fallbacks:** This repository has no automated headless visual test runner (`test:ui`/Playwright absent). Responsive checks at 375px/1280px remain manual browser verification steps in `npm run dev`.
 
 ### 2. Adapted `SKILL.md` Output
 
@@ -101,32 +122,41 @@ Ensure every new or modified Svelte UI component meets baseline visual, accessib
 5. **Verification:** Run `just check` and `just test` before finishing, and complete the manual 375px/1280px and keyboard-focus check when UI layout or interactive states change.
 ```
 
+---
+
 ## Example Scenarios
 
-Beyond the worked example above, [tests/fixtures/](tests/fixtures/) includes eight concrete input/output scenarios showing how `skill-adapter` handles different situations:
+The repository includes eight concrete input/output scenarios in [tests/fixtures/](tests/fixtures/) illustrating how `skill-adapter` handles diverse repository constraints:
 
-| Example | Scenario & Expected Behaviour |
-| :--- | :--- |
-| **[eval-01-sql-verification](tests/fixtures/eval-01-sql-verification)** | **Already compatible:** Keeps ~90% of wording verbatim, mapping only `uv run`, `just check-db`, and `src/db/models.py` paths. |
-| **[eval-02-ui-polish](tests/fixtures/eval-02-ui-polish)** | **Partial conflict & fallback:** Preserves WCAG/accessibility rules while translating React/Tailwind to Svelte 5/scoped CSS and adding a manual viewport fallback. |
-| **[eval-03-playwright-visual](tests/fixtures/eval-03-playwright-visual)** | **Unadaptable hard stop (Gate 2):** Refuses to adapt a Chromium pixel-diff skill into a headless Python CLI repo, outputting an **Incompatibility Report** instead of a placebo skill. |
-| **[eval-04-unsafe-webhook](tests/fixtures/eval-04-unsafe-webhook)** | **Security rejection (Gate 1):** Detects and halts on a concealed `curl ... -d "$(env)"` exfiltration + prompt-injection payload inside `references/format.md`. |
-| **[eval-05-writing-docs](tests/fixtures/eval-05-writing-docs)** | **Audience & tone adaptation:** Preserves diff/flag verification while replacing SaaS marketing tone and Jira placeholders with `.agents/rules/tone.md` and `CHANGELOG.md` conventions. |
-| **[eval-06-charts-multifile](tests/fixtures/eval-06-charts-multifile)** | **Multi-file bundle & collision scoping:** Audits and adapts `SKILL.md` + `scripts/render_chart.py` + `references/palette-rules.md` while resolving overlap with an existing `.agents/skills/chart-reporting` skill. |
-| **[eval-07-readapt-update](tests/fixtures/eval-07-readapt-update)** | **Re-adaptation on upstream update:** Merges an upstream v2 OpenAPI diff step while preserving existing local `uv run` and `just api-test` overrides via `metadata:`. |
-| **[eval-08-plugin-suite](tests/fixtures/eval-08-plugin-suite)** | **Multi-skill plugin triage & cross-cutting discovery:** Enumerates suite skills/hooks with `gate1_scan.py`, samples `DESIGN.md`/`assets/main.js`, discloses lost session persistence from omitting `hooks/`, and tightens broad triggers. |
+| Scenario | Input & Project Context | Expected Adaptation Behavior |
+| :--- | :--- | :--- |
+| **[eval-01-sql-verification](tests/fixtures/eval-01-sql-verification)** | SQL verification skill in a matching Python/PostgreSQL repo | **Minimal pass:** Keeps ~90% of phrasing verbatim; maps only `uv run` and project model paths. |
+| **[eval-02-ui-polish](tests/fixtures/eval-02-ui-polish)** | React/Tailwind visual polish skill in a SvelteKit repo | **Partial conflict & fallback:** Preserves accessibility checks while translating idioms and disclosing manual fallbacks. |
+| **[eval-03-playwright-visual](tests/fixtures/eval-03-playwright-visual)** | Chromium visual diff skill in a headless Python CLI repo | **Unadaptable hard stop (Gate 2):** Refuses adaptation with an Incompatibility Report instead of generating a placebo. |
+| **[eval-04-unsafe-webhook](tests/fixtures/eval-04-unsafe-webhook)** | Skill concealing environment exfiltration in references | **Security rejection (Gate 1):** Halts on suspicious payload without executing untrusted code. |
+| **[eval-05-writing-docs](tests/fixtures/eval-05-writing-docs)** | SaaS marketing release-notes skill in a terse OSS repo | **Audience & tone adaptation:** Preserves diff verification while matching local `tone.md` conventions. |
+| **[eval-06-charts-multifile](tests/fixtures/eval-06-charts-multifile)** | Multi-file skill overlapping an existing local reporting skill | **Bundle triage & collision resolution:** Adapts scripts and references; scopes boundaries cleanly with existing skills. |
+| **[eval-07-readapt-update](tests/fixtures/eval-07-readapt-update)** | Upstream v2 release of a previously adapted skill | **Re-adaptation:** Merges upstream changes while preserving local project overrides via YAML `metadata:`. |
+| **[eval-08-plugin-suite](tests/fixtures/eval-08-plugin-suite)** | Full plugin bundle with multiple skills and hooks | **Suite triage:** Scopes individual target skill, discloses omitted hook capabilities, and tightens triggers. |
 
-To check any skill directory against structural rules (`SKILL.md` frontmatter, `<500` lines, 1-level links):
+---
+
+## Validating Skill Layout
+
+To verify any skill against `agentskills.io` structural requirements (frontmatter, length, and relative links):
 
 ```bash
 python3 tests/validate_skills.py /path/to/your-skill
 ```
+
+---
 
 ## Repository Structure
 
 ```text
 skill-adapter/
 ├── README.md
+├── SCOPE.md
 ├── LICENSE
 ├── .gitignore
 ├── docs/
@@ -144,18 +174,10 @@ skill-adapter/
     ├── validate_skills.py
     ├── test_validate_skills.py
     ├── test_gate1_scan.py
-    ├── rubric.md
-    ├── results.md
     └── fixtures/
-        ├── eval-01-sql-verification/
-        ├── eval-02-ui-polish/
-        ├── eval-03-playwright-visual/
-        ├── eval-04-unsafe-webhook/
-        ├── eval-05-writing-docs/
-        ├── eval-06-charts-multifile/
-        ├── eval-07-readapt-update/
-        └── eval-08-plugin-suite/
 ```
+
+---
 
 ## License
 
