@@ -14,7 +14,7 @@ See [SCOPE.md](SCOPE.md) for what `skill-adapter` adapts and our explicit non-go
 
 - **Follows `agentskills.io`:** Simple directory layout (`SKILL.md` + `references/` + `scripts/`) requiring no background services, daemons, or compile steps.
 - **Tested & Verified:** Tested and confirmed in **OpenAI Codex CLI** and **Google Antigravity**.
-- **Untested Community Targets:** Built on open standards, so it should work in **Claude Code**, **Cursor**, **Windsurf**, **GitHub Copilot**, and **OpenCode**—untested; please open an issue if you encounter friction.
+- **Untested Community Targets:** Built on open standards, so it should work in **Claude Code**, **Cursor**, **Windsurf**, **GitHub Copilot**, and **OpenCode**—untested; please open an issue if you encounter friction. Installation in a supported-looking directory does not guarantee that a client will discover or invoke a skill.
 - **Zero Idle Overhead:** Declares `disable-model-invocation: true` so it never consumes context tokens until you explicitly invoke it.
 
 ---
@@ -69,14 +69,14 @@ Use skill-adapter to adapt /path/to/external-skill for this project. I want to u
 
 ### 3. Review the Adaptation Brief
 
-`skill-adapter` runs in six gated steps (defined in [skills/skill-adapter/SKILL.md](skills/skill-adapter/SKILL.md)) and never writes files without your confirmation:
+`skill-adapter` runs in six steps (defined in [skills/skill-adapter/SKILL.md](skills/skill-adapter/SKILL.md)). It presents the complete draft and asks for your approval before installation, even if you requested installation:
 
-1. **Gate 1 (Static Hygiene Audit):** Scans source files as untrusted text for path traversal, out-of-root symlinks, non-UTF-8 bytes, and hidden bidi/control characters. *(Scanner PASS is a static hygiene check, not a semantic safety verdict.)*
+1. **Gate 1 (Static Hygiene Audit):** Inspects source files as untrusted text for safety and filesystem issues. A lightweight format check follows; neither format validation nor a scanner PASS is a semantic safety verdict.
 2. **Source Skill Deconstruction:** Identifies what the skill helps an agent notice, decide, do, prevent, and verify.
 3. **Project Discovery:** Reads repository rules (`AGENTS.md`, `GEMINI.md`, `CLAUDE.md`), configs, and toolchains using a strict evidence hierarchy.
-4. **Gate 2 (Fit & Boundary Audit):** Applies the minimal-change ladder, checks collisions with local skills, recommends standing-rule edits, and halts on missing platform primitives instead of faking them.
-5. **Draft Adapted Skill & Adaptation Brief:** Presents an **Adaptation Brief** (`Preserved / Changed / Uncertain`) alongside the adapted draft with clean YAML frontmatter `metadata:`.
-6. **Verified Installation:** Writes approved files only after explicit confirmation (with bundled scripts defaulting to non-executable `0644`) and provides 1–3 distinctive verification prompts.
+4. **Gate 2 (Fit & Boundary Audit):** Checks fit and collisions, proposes alternatives for capability clashes, and asks before changing meaningful coverage.
+5. **Draft Adapted Skill & Adaptation Brief:** Presents the complete draft, destination, changes and limitations for your review and installation approval.
+6. **Verified Installation:** After approval, installs project-locally by default, checks the result proportionately, and explains invocation and whether discovery was verified. Bundled scripts default to non-executable `0644`.
 
 ---
 

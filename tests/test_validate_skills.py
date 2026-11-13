@@ -58,6 +58,18 @@ class ValidateSkillDirTests(unittest.TestCase):
             self.assertFalse(res.passed)
             self.assertTrue(any("SKIILL.md" in err for err in res.errors))
 
+    def test_rejects_malformed_or_incomplete_frontmatter(self) -> None:
+        cases = (
+            ("---\nname: [broken\ndescription: example\n---\n", "Invalid YAML"),
+            ("---\nname: sample-skill\n---\n", "description"),
+        )
+        for content, expected in cases:
+            with self.subTest(expected=expected), tempfile.TemporaryDirectory() as tmp:
+                skill_dir = self._make_skill(Path(tmp), "sample-skill", {"SKILL.md": content})
+                result = validate_skill_dir(skill_dir)
+                self.assertFalse(result.passed)
+                self.assertTrue(any(expected in error for error in result.errors), result.errors)
+
     def test_rejects_name_mismatch_and_bad_casing(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             skill_dir = self._make_skill(

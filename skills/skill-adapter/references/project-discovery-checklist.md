@@ -32,9 +32,9 @@ Inspect 1–2 representative files only in the subsystem the skill touches:
 - **Cross-Cutting / General Coding & Review:** Top-level design/architecture docs (`DESIGN.md`, `ARCHITECTURE.md`) and 1–2 primary entrypoints (`index.html`, `assets/main.js`, `src/main.*`) so coding-discipline skills reflect real codebase patterns
 - **Confidence Note:** `<state whether observed patterns are current or legacy/inconsistent>`
 
-## Tier 4: User Intent, Target Mode & Single Clarification
+## Tier 4: User Intent & Target Mode
 
 - **Stated Goal:** `<why the user is importing or updating this skill>`
 - **Target Skill Path:** `<new installation path or existing adapted skill path for re-adaptation>`
 - **Observed Friction:** `<what fails or grates if the source skill runs unchanged>`
-- **Single Clarifying Question (only if blocked):** `<one focused question if Tiers 1–3 leave critical intent unresolved>`
+- **Clarification:** `<discuss unresolved intent or value with focused questions until a direction is agreed>`

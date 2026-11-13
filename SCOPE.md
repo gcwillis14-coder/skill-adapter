@@ -20,7 +20,7 @@ This document sets clear expectations on what `skill-adapter` will adapt, what i
 
 ## What It Will NOT Adapt (Non-Goals)
 
-- **No Placebo Skills (Missing Primitives):** If a skill fundamentally requires an environment or toolchain absent from your repository (e.g., headless browser visual regression testing on a headless Python API), `skill-adapter` refuses the adaptation with an **Incompatibility Report** rather than inventing a fake or hollow skill.
+- **No Placebo Skills (Missing Primitives):** When an essential capability is missing, `skill-adapter` explains the clash and discusses viable alternatives. If no safe, useful option is agreed, it reports the incompatibility rather than inventing a hollow skill.
 - **No Silent Rule Alterations:** `skill-adapter` will never silently rewrite your repository's standing instruction files (`AGENTS.md`, `CLAUDE.md`, `GEMINI.md`). If an external skill carries repository-wide conventions, it recommends those additions in the Adaptation Brief for you to review and apply.
 - **No Blind Code Execution:** `skill-adapter` never executes external scripts, hooks, or binaries during analysis. Gate 1 static scanning treats all source files as untrusted text.
 - **No Unreviewed Executables:** Bundled scripts in `scripts/` are written with non-executable permissions (`0644`) by default. Executable permissions (`chmod +x`) require your explicit per-file confirmation.
