@@ -61,6 +61,18 @@ class Gate1ScanTests(unittest.TestCase):
             self.assertEqual(report["status"], "HALT")
             self.assertTrue(any("null bytes" in r for r in report["halt_reasons"]))
 
+    def test_svg_is_scanned_as_text(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp) / "svg-skill"
+            root.mkdir()
+            (root / "SKILL.md").write_text("# SVG\n", encoding="utf-8")
+            (root / "diagram.svg").write_text(
+                "<svg><text>safe\u202ehidden</text></svg>\n", encoding="utf-8"
+            )
+            report = scan_directory(root)
+            self.assertEqual(report["status"], "HALT")
+            self.assertTrue(any("diagram.svg" in r and "U+202E" in r for r in report["halt_reasons"]))
+
     def test_plugin_suite_and_base64_flag(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp) / "suite"

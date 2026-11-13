@@ -17,6 +17,7 @@ import argparse
 import json
 import os
 import re
+import stat
 import sys
 import unicodedata
 from pathlib import Path
@@ -43,10 +44,11 @@ BASE64_BLOB_RE = re.compile(r"(?<![A-Za-z0-9+/=])[A-Za-z0-9+/]{64,}={0,2}(?![A-Z
 PARENT_TRAVERSAL_RE = re.compile(r"(?:^|[\s(\"'`])\.\./")
 MANIFEST_NAMES = {"hooks.json", "mcp_config.json", ".mcp.json", "plugin.json"}
 BINARY_EXTENSIONS = {
-    ".png", ".jpg", ".jpeg", ".gif", ".webp", ".ico", ".svg",
+    ".png", ".jpg", ".jpeg", ".gif", ".webp", ".ico",
     ".woff", ".woff2", ".ttf", ".eot", ".pdf", ".zip", ".tar", ".gz",
     ".pyc", ".so", ".dylib", ".dll", ".exe", ".bin", ".wasm",
 }
+MAX_FILE_BYTES = 5 * 1024 * 1024  # 5 MiB guard against memory exhaustion
 
 
 def _find_suspicious_chars(text: str) -> list[dict[str, Any]]:
@@ -113,6 +115,15 @@ def scan_directory(target_dir: Path) -> dict[str, Any]:
 
             if full.suffix.lower() in BINARY_EXTENSIONS:
                 flags.append(f"Asset/binary extension skipped from text scan: {rel}")
+                continue
+
+            st = os.lstat(full)
+            if not stat.S_ISREG(st.st_mode):
+                halt_reasons.append(f"Non-regular file (FIFO/device/socket) detected: {rel}")
+                continue
+
+            if st.st_size > MAX_FILE_BYTES:
+                flags.append(f"Oversized file skipped from full text scan ({st.st_size} bytes): {rel}")
                 continue
 
             raw = full.read_bytes()

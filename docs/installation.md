@@ -14,11 +14,17 @@ Keep `skill-adapter` installed at the **user (global) level** so you can invoke 
 
 ## Discovery Locations by Client
 
-| Client | User-Level Path (Recommended for `skill-adapter`) | Project-Local Path (Recommended for Adapted Output) | Invocation |
+Most modern coding agents and IDEs follow the open `agentskills.io` layout (`SKILL.md` + `references/` + `scripts/`), either via the shared `.agents/skills/` path or a client-specific folder:
+
+| Client / IDE | User-Level Path (for `skill-adapter`) | Project-Local Path (for Adapted Output) | Invocation |
 | :--- | :--- | :--- | :--- |
-| **Claude Code** (CLI & IDE extension) | `~/.claude/skills/skill-adapter/` | `<repo>/.claude/skills/<name>/` | `/skill-adapter` |
+| **Claude Code** (CLI & IDE) | `~/.claude/skills/skill-adapter/` | `<repo>/.claude/skills/<name>/` | `/skill-adapter` |
 | **OpenAI Codex CLI** | `~/.agents/skills/skill-adapter/` | `<repo>/.agents/skills/<name>/` | `$skill-adapter` |
-| **Google Antigravity** (`agy` CLI, Antigravity IDE, Antigravity 2.0) | `~/.gemini/config/skills/skill-adapter/` | `<repo>/.agents/skills/<name>/` | Explicit prompt or client skill trigger (see below) |
+| **Google Antigravity** (`agy`, IDE, 2.0) | `~/.gemini/config/skills/skill-adapter/` | `<repo>/.agents/skills/<name>/` | Explicit prompt |
+| **Cursor** | `~/.cursor/skills/skill-adapter/` (or `~/.agents/skills/`) | `<repo>/.cursor/skills/<name>/` (or `.agents/skills/`) | `/skill-adapter` or prompt |
+| **Windsurf** | `~/.codeium/windsurf/skills/skill-adapter/` | `<repo>/.windsurf/skills/<name>/` | Explicit prompt |
+| **GitHub Copilot** (VS Code) | `~/.copilot/skills/skill-adapter/` | `<repo>/.github/skills/<name>/` (or `.agents/skills/`) | `/skill-adapter` or prompt |
+| **OpenCode / Gemini CLI / Other `agentskills.io` tools** | `~/.agents/skills/skill-adapter/` | `<repo>/.agents/skills/<name>/` | Client trigger or prompt |
 
 ### Google Antigravity Notes (`agy` CLI, Antigravity IDE, Antigravity 2.0)
 
@@ -37,49 +43,56 @@ Keep `skill-adapter` installed at the **user (global) level** so you can invoke 
   Read ~/.gemini/config/skills/skill-adapter/SKILL.md and use it to adapt /path/to/external-skill for this repository.
   ```
 
-## Step-by-Step Setup
+## Ways to Install
 
-### 1. Clone the Repository
+### Option 1: Via `npx skills` (`skills.sh` / `agentskills.io` CLI)
+
+If you use the `skills` CLI, install `skill-adapter` directly from GitHub into your chosen agents:
+
+```bash
+npx skills add https://github.com/gcwillis14-coder/skill-adapter
+```
+
+### Option 2: Clone & Copy or Symlink
+
+#### 1. Clone the Repository
 
 ```bash
 git clone https://github.com/gcwillis14-coder/skill-adapter.git
 cd skill-adapter
 ```
 
-### 2. Install for Your Active Client(s)
+#### 2. Copy (or Symlink) into Your Agent's Skills Directory
 
 > [!NOTE]
 > **Symlinks vs. `cp -r` (Windows & Sandbox Caveat):**
 > Symlinking (`ln -s`) lets you update via `git pull`, but on **Windows** symlinks require Developer Mode or elevated privileges, and inside **sandboxed or containerized agents** symlinks pointing outside the workspace root may not be readable. In those environments, copy the directory with `cp -r` instead.
 
-#### Option A: Claude Code
-
 ```bash
-mkdir -p ~/.claude/skills
-cp -r skills/skill-adapter ~/.claude/skills/skill-adapter
-# Or symlink (POSIX, non-sandboxed):
-# ln -s "$(pwd)/skills/skill-adapter" ~/.claude/skills/skill-adapter
+# Claude Code
+mkdir -p ~/.claude/skills && cp -r skills/skill-adapter ~/.claude/skills/skill-adapter
+
+# OpenAI Codex CLI / OpenCode / shared .agents/skills clients
+mkdir -p ~/.agents/skills && cp -r skills/skill-adapter ~/.agents/skills/skill-adapter
+
+# Google Antigravity (global)
+mkdir -p ~/.gemini/config/skills && cp -r skills/skill-adapter ~/.gemini/config/skills/skill-adapter
+
+# Cursor
+mkdir -p ~/.cursor/skills && cp -r skills/skill-adapter ~/.cursor/skills/skill-adapter
+
+# Windsurf
+mkdir -p ~/.codeium/windsurf/skills && cp -r skills/skill-adapter ~/.codeium/windsurf/skills/skill-adapter
+
+# GitHub Copilot (VS Code)
+mkdir -p ~/.copilot/skills && cp -r skills/skill-adapter ~/.copilot/skills/skill-adapter
 ```
 
-#### Option B: OpenAI Codex CLI (and `.agents/skills` Compatible Tools)
+On POSIX systems without sandbox restrictions, you can replace `cp -r skills/skill-adapter ...` with `ln -s "$(pwd)/skills/skill-adapter" ...`.
 
-```bash
-mkdir -p ~/.agents/skills
-cp -r skills/skill-adapter ~/.agents/skills/skill-adapter
-# Or symlink (POSIX, non-sandboxed):
-# ln -s "$(pwd)/skills/skill-adapter" ~/.agents/skills/skill-adapter
-```
+#### Option 3: Workspace-Local Install (Single Repository)
 
-#### Option C: Google Antigravity (`agy` CLI, Antigravity IDE, Antigravity 2.0)
-
-Global installation (available across all workspaces):
-
-```bash
-mkdir -p ~/.gemini/config/skills
-cp -r skills/skill-adapter ~/.gemini/config/skills/skill-adapter
-```
-
-Or workspace-scoped installation (inside a specific repository):
+If you prefer not to install globally, copy `skills/skill-adapter` into a single repository's `.agents/skills/` (or `.claude/skills/`, `.cursor/skills/`, `.windsurf/skills/`, `.github/skills/`):
 
 ```bash
 mkdir -p <repo>/.agents/skills
@@ -110,13 +123,13 @@ rm -rf ~/.claude/skills/skill-adapter ~/.agents/skills/skill-adapter ~/.gemini/c
 
 Project-local adapted skills already generated inside your repositories remain self-contained and continue working independently.
 
-## Tested Compatibility
+## Input Formats `skill-adapter` Accepts
 
-The v1 verification suite ([tests/results.md](../tests/results.md)) verified the following in an **offline, sandboxed Python 3.15 environment** against `skills/skill-adapter/SKILL.md` (116 lines) and its bundled `references/`:
+When adapting an external skill, you can point `skill-adapter` at any of the common ways skills are distributed:
 
-- **Structural validation (`python3 tests/validate_skills.py`):** 10/10 passed across `skills/skill-adapter/` and all 9 fixture skills, and 5/5 generated adapted skills passed (`EVAL-01`, `02`, `05`, `06`, `07`).
-- **Validator unit tests (`python3 -m unittest discover -s tests -v`):** 7/7 tests passed.
-- **Behavioral evaluations (`EVAL-01`–`EVAL-07`):** 7/7 passed across No Skill vs. Unadapted Original vs. Adapted Skill comparisons, covering Gate 1 security rejection (`EVAL-04`), Gate 2 unadaptable hard stop (`EVAL-03`), degradable manual fallbacks (`EVAL-01`, `02`, `06`, `07`), multi-file `scripts/` + `references/` + `.agents/skills/` collision scoping (`EVAL-06`), and v2 `metadata:` re-adaptation (`EVAL-07`).
-- **Scope note:** Evaluations ran against synthetic fixture repositories (`tests/fixtures/`) without live external CLI installations of Claude Code, OpenAI Codex CLI, or Google Antigravity, without `node_modules/`, and without outbound network access. Client discovery paths above follow documented client conventions and were not tested in live external client binaries during this run.
+- **Local directory:** `/path/to/skill-dir` (or an existing `~/.claude/skills/<name>` / `.agents/skills/<name>` install)
+- **GitHub repository or subdirectory URL:** `https://github.com/<owner>/<repo>` or `https://github.com/<owner>/<repo>/tree/main/skills/<name>`
+- **Multi-skill / plugin bundle:** Repositories with `plugin.json`, `.claude-plugin/`, `hooks/`, or multiple `skills/*/SKILL.md` folders (`skill-adapter` enumerates the suite and asks or scopes which skill(s) to adapt)
+- **Existing adapted skill (for updates):** Point at both the updated upstream source and your local adapted skill directory to run a three-way merge
 
-See [README.md](../README.md) for an overview and [skills/skill-adapter/SKILL.md](../skills/skill-adapter/SKILL.md) for the skill definition.
+See [README.md](../README.md) for worked examples and [skills/skill-adapter/SKILL.md](../skills/skill-adapter/SKILL.md) for the skill definition.

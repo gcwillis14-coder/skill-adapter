@@ -6,8 +6,8 @@ Use this checklist in Step 3 to gather only the repository context required for 
 
 Inspect documented project rules and existing skills before reading application code:
 
-- **Agent instructions & rules:** `AGENTS.md`, `CLAUDE.md`, `GEMINI.md`, `.agents/rules/*.md`, `.cursorrules`, `.github/copilot-instructions.md`
-- **Existing local skills & plugins:** `.agents/skills/`, `.agents/plugins/`, `.claude/skills/`, `.codex/skills/`, `~/.gemini/config/skills/` (note existing skills with `metadata.adapted_from` or overlapping triggers)
+- **Agent instructions & rules:** `AGENTS.md`, `CLAUDE.md`, `GEMINI.md`, `.agents/rules/*.md`, `.cursorrules`, `.cursor/rules/`, `.windsurfrules`, `.windsurf/rules/`, `.github/copilot-instructions.md`
+- **Existing local skills & plugins:** `.agents/skills/`, `.agents/plugins/`, `.claude/skills/`, `.cursor/skills/`, `.windsurf/skills/`, `.github/skills/`, `.opencode/skills/`, `.codex/skills/`, `~/.gemini/config/skills/` (note existing skills with `metadata.adapted_from` or overlapping triggers)
 - **Contributor & style guides:** `CONTRIBUTING.md`, `STYLE.md`, `.editorconfig`
 - **Record:** `<explicit constraints, banned/required tools, mandatory workflows, existing skill overlaps, or "None found">`
 
