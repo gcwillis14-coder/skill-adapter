@@ -9,6 +9,9 @@ any code) and reports:
 - Invisible bidi override, zero-width, and suspicious control characters
 - Long base64-like payloads
 - Active hook/MCP/plugin manifests (hooks.json, mcp_config.json, .mcp.json, plugin.json, hooks/)
+
+Note: A scanner PASS is a static hygiene check, not a semantic safety verdict.
+Semantic review of instructions, prompt injection, and script behaviors is always required.
 """
 
 from __future__ import annotations
@@ -181,6 +184,7 @@ def main(argv: list[str] | None = None) -> int:
         print(json.dumps(report, indent=2))
     else:
         print(f"Gate 1 Hygiene Scan: {report['status']} ({report['files_scanned']} files)")
+        print("Note: Scanner PASS is a static hygiene check, not a semantic safety verdict.")
         if report["skills_found"]:
             print("Skills found: " + ", ".join(report["skills_found"]))
         for item in report["halt_reasons"]:
