@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
-"""Bounded static-text hygiene checks, NOT a semantic prompt-injection detector.
+"""Bounded static-text hygiene report, not a semantic safety decision.
 
-Use on a private, stable snapshot. No imported code is executed. PASS is only a
-hygiene result; semantic review and installation approval are still required.
-Only the root .git directory is excluded, explicitly, as transport metadata.
-Git tree modes must be checked separately before checkout.
+Use on a private, stable snapshot. No imported code is executed. FLAGGED may
+mean an asset needs separate review; it does not mean the skill is malicious.
+Only root .git directory metadata is excluded. PASS still needs semantic review.
 """
 from __future__ import annotations
 
@@ -22,7 +21,6 @@ from typing import Any
 BASE64_BLOB_RE = re.compile(r"(?<![A-Za-z0-9+/=])[A-Za-z0-9+/]{64,}={0,2}(?![A-Za-z0-9+/=])")
 PARENT_TRAVERSAL_RE = re.compile(r"(?:^|[\s(\"'`])\.\./")
 MANIFEST_NAMES = {"hooks.json", "mcp_config.json", ".mcp.json", "plugin.json"}
-SCRIPT_EXTENSIONS = {".py", ".sh", ".bash", ".zsh", ".ps1", ".bat", ".cmd", ".js", ".mjs", ".cjs", ".ts", ".rb", ".pl"}
 MAX_FILE_BYTES = 1024 * 1024
 MAX_TOTAL_BYTES = 16 * 1024 * 1024
 MAX_ENTRIES = 4096
@@ -38,7 +36,7 @@ def _find_suspicious_chars(text: str) -> list[dict[str, Any]]:
         if ((category == "Cf" and not (ch == "\ufeff" and index == 0))
                 or (category == "Cc" and ch not in "\t\n\r")):
             findings.append({"line": line, "col": col, "codepoint": f"U+{ord(ch):04X}",
-                             "name": unicodedata.name(ch, "CONTROL")})
+                             "name": unicodedata.name(ch, "CONTROL"), "category": category})
             if len(findings) >= 20:
                 break
         if ch == "\n":
@@ -47,10 +45,11 @@ def _find_suspicious_chars(text: str) -> list[dict[str, Any]]:
 
 
 def scan_directory(target_dir: Path) -> dict[str, Any]:
-    """Fail closed on incomplete inspection and hash inspected regular files.
+    """Inventory reviewed bytes; distinguish unsafe/incomplete access from flags.
 
-    This is not an OS sandbox or protection against concurrent hostile mutation.
-    Binary/oversized inputs require a separate review, not a silent skip.
+    Optional unreviewed files may be omitted by the adapter. Required files must
+    be reviewed before claiming a complete adaptation. This is not a sandbox
+    against concurrent hostile filesystem mutation.
     """
     target_dir = Path(os.path.abspath(target_dir))
     halts: list[str] = []
@@ -62,7 +61,7 @@ def scan_directory(target_dir: Path) -> dict[str, Any]:
     pending: list[tuple[Path, int]] = []
     try:
         if not stat.S_ISDIR(target_dir.lstat().st_mode):
-            halts.append("Scan root must be a real directory, not a symlink or special file")
+            halts.append("Scan root must be a real snapshot directory, not a symlink or special file")
         else:
             resolved_root = target_dir.resolve(strict=True)
             pending.append((target_dir, 0))
@@ -80,7 +79,7 @@ def scan_directory(target_dir: Path) -> dict[str, Any]:
                 for entry in iterator:
                     entries_seen += 1
                     if entries_seen > MAX_ENTRIES:
-                        halts.append(f"Entry limit exceeded ({MAX_ENTRIES}); scan incomplete")
+                        halts.append(f"Entry limit exceeded ({MAX_ENTRIES}); narrow the review scope")
                         pending.clear()
                         break
                     children.append(entry.name)
@@ -98,17 +97,18 @@ def scan_directory(target_dir: Path) -> dict[str, Any]:
                 info = full.lstat()
                 if stat.S_ISLNK(info.st_mode):
                     try:
-                        outside = not full.resolve(strict=True).is_relative_to(resolved_root)
+                        outside = not full.resolve(strict=False).is_relative_to(resolved_root)
                         label = "Out-of-root symlink" if outside else "Internal symlink"
+                        findings = halts if outside else flags
                     except (OSError, RuntimeError):
-                        label = "Broken or looping symlink"
-                    halts.append(f"{label}: {rel!r}; symlinks are not inspected or installed")
+                        label, findings = "Unresolved symlink", flags
+                    findings.append(f"{label}: {rel!r}; not followed or copied")
                     continue
                 if stat.S_ISDIR(info.st_mode):
                     if name == ".git" and full.parent == target_dir:
                         excluded.append(rel + "/")
                     elif depth >= MAX_DEPTH:
-                        halts.append(f"Depth limit exceeded at {rel!r}; scan incomplete")
+                        halts.append(f"Depth limit exceeded at {rel!r}; narrow the review scope")
                     else:
                         if name == "hooks":
                             flags.append(f"Hooks directory present: {(rel + '/')!r}")
@@ -119,10 +119,13 @@ def scan_directory(target_dir: Path) -> dict[str, Any]:
                     halts.append(f"Special file (FIFO/socket/device) not read: {rel!r}")
                     continue
                 if info.st_nlink > 1:
-                    halts.append(f"Hard-linked file not accepted in snapshot: {rel!r}")
+                    flags.append(f"Hard-linked file not read; snapshot independently or omit: {rel!r}")
                     continue
-                if info.st_size > MAX_FILE_BYTES or total_bytes + info.st_size > MAX_TOTAL_BYTES:
-                    halts.append(f"Byte limit exceeded at {rel!r}; file not fully scanned")
+                if info.st_size > MAX_FILE_BYTES:
+                    flags.append(f"File exceeds text-scan size limit; separate review or omit: {rel!r}")
+                    continue
+                if total_bytes + info.st_size > MAX_TOTAL_BYTES:
+                    halts.append(f"Total byte limit exceeded at {rel!r}; narrow the review scope")
                     continue
                 fd = os.open(full, os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0) | getattr(os, "O_NONBLOCK", 0))
                 with os.fdopen(fd, "rb") as stream:
@@ -135,35 +138,33 @@ def scan_directory(target_dir: Path) -> dict[str, Any]:
                     raw = stream.read(remaining + 1)
                     after = os.fstat(stream.fileno())
                 if len(raw) > remaining:
-                    halts.append(f"Byte limit exceeded during read: {rel!r}")
+                    halts.append(f"File grew beyond read limit: {rel!r}")
                     continue
                 if (after.st_size, after.st_mtime_ns, after.st_ctime_ns, after.st_mode, after.st_nlink) != (
                         info.st_size, info.st_mtime_ns, info.st_ctime_ns, info.st_mode, info.st_nlink):
                     halts.append(f"File changed during read: {rel!r}")
                     continue
                 total_bytes += len(raw)
-                executable = bool(info.st_mode & 0o111)
                 manifest.append({"path": rel, "size": len(raw), "sha256": hashlib.sha256(raw).hexdigest(),
-                                 "mode": stat.S_IMODE(info.st_mode), "executable": executable})
+                                 "mode": stat.S_IMODE(info.st_mode), "executable": bool(info.st_mode & 0o111)})
                 if name == "SKILL.md":
                     skills.append(rel)
                 if name in MANIFEST_NAMES:
                     flags.append(f"Plugin/hook/MCP manifest present: {rel!r}")
-                if executable or full.suffix.lower() in SCRIPT_EXTENSIONS or "scripts" in full.relative_to(target_dir).parts[:-1]:
-                    flags.append(f"Script/executable requires review before installation: {rel!r}")
                 if b"\x00" in raw:
-                    halts.append(f"Binary null bytes detected in file: {rel!r}")
+                    flags.append(f"Binary null bytes; not text-reviewed: {rel!r}")
                     continue
                 try:
                     text = raw.decode("utf-8")
-                except UnicodeDecodeError as exc:
-                    halts.append(f"Non-UTF-8 file detected: {rel!r} ({exc!r})")
+                except UnicodeDecodeError:
+                    flags.append(f"Non-UTF-8 file; separate review or omit: {rel!r}")
                     continue
                 files_scanned += 1
                 suspicious = _find_suspicious_chars(text)
                 if suspicious:
                     sample = ", ".join(f"L{s['line']}:{s['col']}:{s['codepoint']}" for s in suspicious[:5])
-                    halts.append(f"Hidden bidi/zero-width/control characters in {rel!r}: {sample}")
+                    findings = halts if any(s["category"] == "Cc" for s in suspicious) else flags
+                    findings.append(f"Hidden bidi/zero-width/control characters in {rel!r}: {sample}; inspect escaped text")
                 for line_num, line in enumerate(text.split("\n"), start=1):
                     if PARENT_TRAVERSAL_RE.search(line):
                         flags.append(f"Parent-directory traversal '..' in {rel!r}:{line_num}")
@@ -197,7 +198,7 @@ def main(argv: list[str] | None = None) -> int:
         print(json.dumps(report, indent=2, ensure_ascii=True))
     else:
         print(f"Gate 1 Hygiene Scan: {report['status']} ({report['files_scanned']} text files)")
-        print("Semantic review is still required; this is NOT a safety certification.")
+        print("Semantic review is still required; flags may need separate review, not rejection.")
         print("Snapshot SHA-256: " + report["snapshot_sha256"])
         for key, label in (("halt_reasons", "HALT"), ("flags", "FLAG")):
             for item in report[key]:

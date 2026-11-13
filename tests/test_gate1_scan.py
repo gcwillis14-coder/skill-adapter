@@ -27,7 +27,7 @@ class Gate1ScanTests(unittest.TestCase):
             self.assertEqual(report["halt_reasons"], [])
             self.assertEqual(report["flags"], [])
 
-    def test_bidi_and_zero_width_halt(self) -> None:
+    def test_bidi_and_zero_width_require_review(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp) / "bidi-skill"
             root.mkdir()
@@ -35,8 +35,8 @@ class Gate1ScanTests(unittest.TestCase):
                 "---\nname: bidi-skill\n---\n# Test\u202ehidden\n", encoding="utf-8"
             )
             report = scan_directory(root)
-            self.assertEqual(report["status"], "HALT")
-            self.assertTrue(any("U+202E" in r for r in report["halt_reasons"]))
+            self.assertEqual(report["status"], "FLAGGED")
+            self.assertTrue(any("U+202E" in r for r in report["flags"]))
 
     def test_out_of_root_symlink_halts(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -51,15 +51,15 @@ class Gate1ScanTests(unittest.TestCase):
             self.assertEqual(report["status"], "HALT")
             self.assertTrue(any("Out-of-root symlink" in r for r in report["halt_reasons"]))
 
-    def test_binary_null_bytes_halt(self) -> None:
+    def test_binary_null_bytes_require_separate_review(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp) / "bin-skill"
             root.mkdir()
             (root / "SKILL.md").write_text("# Bin\n", encoding="utf-8")
             (root / "payload.dat").write_bytes(b"\x00\x01\x02")
             report = scan_directory(root)
-            self.assertEqual(report["status"], "HALT")
-            self.assertTrue(any("null bytes" in r for r in report["halt_reasons"]))
+            self.assertEqual(report["status"], "FLAGGED")
+            self.assertTrue(any("null bytes" in r for r in report["flags"]))
 
     def test_plugin_suite_and_base64_flag(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
