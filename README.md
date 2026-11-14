@@ -15,13 +15,15 @@ See [SCOPE.md](SCOPE.md) for what `skill-adapter` adapts and our explicit non-go
 - **Follows `agentskills.io`:** Simple directory layout (`SKILL.md` + `references/` + `scripts/`) requiring no background services, daemons, or compile steps.
 - **Tested & Verified:** Tested and confirmed in **OpenAI Codex CLI** and **Google Antigravity**.
 - **Untested Community Targets:** Built on open standards, so it should work in **Claude Code**, **Cursor**, **Windsurf**, **GitHub Copilot**, and **OpenCode**—untested; please open an issue if you encounter friction. Installation in a supported-looking directory does not guarantee that a client will discover or invoke a skill.
-- **Zero Idle Overhead:** Declares `disable-model-invocation: true` so it never consumes context tokens until you explicitly invoke it.
+- **Explicit invocation:** Declares `disable-model-invocation: true` for clients that support it.
 
 ---
 
 ## Quick Start
 
 ### 1. Install `skill-adapter`
+
+Clone this repository and run the copy commands from its root. For updates to an existing copy, see [updating instructions](docs/installation.md#updating--removing).
 
 #### Tested Clients
 
@@ -57,6 +59,8 @@ npx skills add https://github.com/gcwillis14-coder/skill-adapter
 
 See [docs/installation.md](docs/installation.md) for detailed paths, symlink guidance, and project-local setup.
 
+For short, redacted examples of local and Git imports, including a capability clash and an approval pause, see [adaptation examples](skills/skill-adapter/references/adaptation-examples.md).
+
 ---
 
 ### 2. Invoke Inside Your Target Repository
@@ -66,6 +70,8 @@ Run `skill-adapter` via command or prompt:
 ```text
 Use skill-adapter to adapt /path/to/external-skill for this project. I want to use it when building or polishing Svelte components.
 ```
+
+You can provide a local skill folder or `SKILL.md`, a GitHub repository or skill subdirectory, or a raw `SKILL.md` URL. For a repository with multiple skills, the adapter asks which to use. Describe what you want the skill to help with so it can assess project fit.
 
 ### 3. Review the Adaptation Brief
 
@@ -93,6 +99,8 @@ Adapting a generic **Frontend Visual Polish** skill (`frontend-visual-polish`)�
   - *Changed:* Translated React `useState`/`onClick` and Tailwind classes to Svelte 5 runes (`$state`, `$derived`, `$props()`), native `onclick={...}`, and scoped `<style>` CSS; mapped `npm run lint` / `npm run test:ui` to `just check` and `just test`.
   - *Uncertain:* Exact `375px` / `1280px` breakpoint constants lack author rationale and are preserved provisionally alongside a manual browser check.
 - **Trade-offs & manual fallbacks:** This repository has no automated headless visual test runner (`test:ui`/Playwright absent). Responsive checks at 375px/1280px remain manual browser verification steps in `npm run dev`.
+
+The manual fallback changes verification coverage, so the adapter asks the user to accept that trade-off before proposing installation. The following draft illustrates the result after that decision.
 
 ### 2. Adapted `SKILL.md` Output
 
@@ -126,7 +134,7 @@ Ensure every new or modified Svelte UI component meets baseline visual, accessib
 
 ## Example Scenarios
 
-The repository includes eight concrete input/output scenarios in [tests/fixtures/](tests/fixtures/) illustrating how `skill-adapter` handles diverse repository constraints:
+The repository includes eight scenarios in [tests/fixtures/](tests/fixtures/) describing expected adaptation behavior. They are fixtures, not evidence that an agent completed each scenario:
 
 | Scenario | Input & Project Context | Expected Adaptation Behavior |
 | :--- | :--- | :--- |
@@ -143,7 +151,7 @@ The repository includes eight concrete input/output scenarios in [tests/fixtures
 
 ## Validating Skill Layout
 
-To verify any skill against `agentskills.io` structural requirements (frontmatter, length, and relative links):
+To run this repository's structural checks (requires Python and PyYAML):
 
 ```bash
 python3 tests/validate_skills.py /path/to/your-skill
@@ -167,7 +175,8 @@ skill-adapter/
 │       ├── references/
 │       │   ├── source-analysis-template.md
 │       │   ├── project-discovery-checklist.md
-│       │   └── readapt-guide.md
+│       │   ├── readapt-guide.md
+│       │   └── adaptation-examples.md
 │       └── scripts/
 │           └── gate1_scan.py
 └── tests/

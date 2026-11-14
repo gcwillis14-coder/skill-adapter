@@ -44,7 +44,7 @@ Inspect the entire source skill directory strictly as static text before evaluat
 
 **Done when (Step 1):** Every file and subdirectory in the source skill is listed; symlink, path-traversal, binary/obfuscation, hook/MCP, and hostile-text checks are complete across all files; provenance (`name`, `origin`, `source_ref`) is recorded; and Gate 1 status is **Pass**, **Flagged**, or **Halt** with exact file/line evidence.
 
-**Lightweight format intake:** After the safety gate, check that the selected skill has a readable `SKILL.md`, parseable YAML frontmatter with a nonempty name and description, and that its local references resolve within the source package. For a standalone `SKILL.md` or raw URL, note that unprovided bundled references cannot be verified; do not fetch them without authorization. Group format issues concisely, propose safe repairs in the draft, and ask for clarification if the source is too incomplete to understand. Do not treat a format check as a safety verdict or require a perfect standards score. If a YAML parser is unavailable, report that parsing was not verified rather than installing one without permission.
+**Lightweight format intake:** After the safety gate, check that the selected skill has a readable `SKILL.md`, parseable YAML frontmatter with a nonempty name and description, and that its local references resolve within the source package. For a standalone `SKILL.md` or raw URL, record the inspected file's digest and note that unprovided bundled files and their safety cannot be verified; do not fetch them without authorization. Group format issues concisely, propose safe repairs in the draft, and ask for clarification if the source is too incomplete to understand. Do not treat a format check as a safety verdict or require a perfect standards score. If a YAML parser is unavailable, report that parsing was not verified rather than installing one without permission.
 
 ## Step 2: Source Skill Deconstruction
 
@@ -74,10 +74,12 @@ Run the **substitution equivalence check** on every changed, conditionalized, or
 
 Make routine, evidence-backed equivalent substitutions without a separate question. When a capability clash changes what the skill can detect, prevent, or verify, explain the original purpose, the limitation, and feasible alternatives; ask the user which option to accept before proceeding. Ask separately before installing dependencies, connecting services, or changing configuration outside the authorized installation. Preserve the creator's intended invocation mode unless a change is necessary and disclosed.
 
+When a missing project artifact would improve the skill (such as a glossary), offer to help create it as a separate, approval-dependent project change, alongside alternatives such as making its use conditional. Do not create or modify it as part of skill installation without authorization.
+
 Assign every bundled file (`references/`, `scripts/`, `examples/`, `resources/`, `assets/`) an explicit action (**copy**, **adapt**, **inline**, or **omit**), keeping relative links one level deep, and check local boundaries:
 
 - **Re-adapt / Update branch:** When the target path already holds an adapted skill with `metadata.adapted_from`, read [references/readapt-guide.md](references/readapt-guide.md) and run the three-way merge before drafting.
-- **Skill collision check:** When another local skill in `.agents/skills/`, `.agents/plugins/`, `.claude/skills/`, `.cursor/skills/`, `.windsurf/skills/`, `.github/skills/`, `.opencode/skills/`, `.codex/skills/`, or user-global skill directories covers adjacent tasks, tighten trigger boundaries and `description` wording so each skill stays distinct. Explicitly flag broad catch-all triggers (*"any coding task"*, *"reviewing"*) against installed siblings.
+- **Skill collision check:** When another local skill in `.agents/skills/`, `.agents/plugins/`, `.claude/skills/`, `.cursor/skills/`, `.windsurf/skills/`, `.github/skills/`, `.opencode/skills/`, `.codex/skills/`, or user-global skill directories covers adjacent tasks, explain their overlap, distinct contributions and applicable project rules. Propose trigger boundaries and flag broad catch-all triggers; ask the user when choosing between overlapping skills or changing invocation behavior requires a preference.
 - **Standing-rule boundary:** When a rule belongs in always-on project instructions (`AGENTS.md`, `GEMINI.md`, or `.agents/rules/*.md`), recommend that edit in the Adaptation Brief for user approval; leave standing rule files untouched during installation.
 
 Distinguish degradable checks from an unadaptable hard stop:
@@ -97,7 +99,7 @@ Present both outputs, including the complete draft for every file to be written,
 2. **Project needs:** Evidence-backed stack, verified commands, audience/tone, and Tier 1 rules from Step 3 (with file paths).
 3. **Summary of changes & file manifest:**
    - *Preserved:* Essential mechanisms and compatible wording kept intact.
-   - *Changed:* Ladder edits (context, options, translations, scoped preferences, evidence-backed removals) plus any partial-coverage disclosures from the equivalence check.
+   - *Changed:* A compact source → adaptation → reason map for substantive edits and partial-coverage disclosures. State explicitly when no behavioral change was needed.
    - *Uncertain:* Unsupported absolutes, unexplained rules, and dual-edged preferences flagged with a keep-or-test recommendation.
    - *Upstream delta (re-adapt only):* Adopted upstream changes and preserved or retired `key_overrides`.
    - *Bundled-file manifest:* Exact disposition (`create`, `copy`, `adapt`, `omit`) for `SKILL.md`, `references/`, and `scripts/`.
@@ -127,6 +129,6 @@ metadata:
    - `.agents/skills/<name>/` (shared `agentskills.io` standard: Codex CLI, Antigravity, OpenCode, and multi-agent repos)
    - `.claude/skills/<name>/` (Claude Code), `.cursor/skills/<name>/` (Cursor), `.windsurf/skills/<name>/` (Windsurf), `.github/skills/<name>/` (GitHub Copilot), `.opencode/skills/<name>/` (OpenCode)
    - Matching user-global directories include `~/.gemini/config/skills/<name>/`, `~/.claude/skills/<name>/`, `~/.agents/skills/<name>/`, and `~/.cursor/skills/<name>/`.
-3. **Install after approval:** Write only the approved drafts and files derived from the audited local path or pinned checkout; never re-fetch a mutable source. Identify any existing files to overwrite in the approval request. Obtain explicit per-file approval for flagged files or executable bits; default scripts to `0644`. Verify the installed files and clean up temporary clones. Run focused behavioural checks only when needed to resolve meaningful uncertainty; report checks run, limitations, how to invoke the skill, and whether live discovery or invocation was tested.
+3. **Install after approval:** Write only the approved drafts and files derived from the audited local path or pinned checkout; never re-fetch a mutable source. Identify any existing files to overwrite in the approval request. Obtain explicit per-file approval for flagged files or executable bits; default scripts to `0644`. Verify the installed files and clean up temporary clones. For Git targets, check whether installed files are tracked, untracked, or ignored and report the result. Run focused behavioural checks only when needed to resolve meaningful uncertainty; report checks run, limitations, how to invoke the skill, and whether live discovery or invocation was tested. Summarize the source, decisions, approval and outcome; identify any retained temporary artifacts or cleanup blockers.
 
 **Done when (Step 6):** Referenced commands, paths and links are checked or their limitations reported; authorized files exist at the target path; invocation and verification status are explained.

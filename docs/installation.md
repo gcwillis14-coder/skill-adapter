@@ -10,7 +10,7 @@ Keep `skill-adapter` installed at the **user (global) level** so you can invoke 
 
 - **Self-contained capability:** No MCP servers, background daemons, or lifecycle hooks.
 - **Cross-client compatibility:** Adheres to standard `agentskills.io` directory conventions.
-- **Zero idle overhead:** Nothing is loaded into context until you actively invoke the skill.
+- **Explicit invocation:** The skill requests explicit invocation in clients that support its setting.
 
 ---
 
@@ -50,7 +50,7 @@ Because `skill-adapter` follows standard `agentskills.io` conventions, these cli
 
 `skill-adapter` declares `disable-model-invocation: true` in its YAML frontmatter:
 
-- **Zero idle context load:** Adapting an external skill is an intentional action, not an ambient coding rule. Disabling automatic model invocation ensures it never consumes prompt tokens during regular coding.
+- **Explicit invocation:** Adapting an external skill is an intentional action. Clients differ in how they handle discovery and invocation settings.
 - **Explicit trigger:** Invoke it directly with `$skill-adapter` in Codex CLI, or mention it in your prompt (e.g., *"Use skill-adapter to adapt..."*).
 - **Fallback for clients without slash commands:** If your client interface lacks command auto-completion for disabled-invocation skills, simply reference it in your prompt:
 
@@ -119,7 +119,7 @@ cp -r skills/skill-adapter <repo>/.agents/skills/skill-adapter
 
 ### Updating `skill-adapter`
 
-- **If copied (`cp -r`):** Pull changes in your clone and re-run the copy command.
+- **If copied (`cp -r`):** Pull changes in your clone and copy the contents into the existing directory, for example `cp -r skills/skill-adapter/. ~/.agents/skills/skill-adapter/`. Review obsolete files separately; copying does not remove them.
 - **If symlinked (`ln -s`):** Run `git pull` inside your `skill-adapter` clone directory.
 
 ### Uninstalling
@@ -137,6 +137,7 @@ Project-local adapted skills previously generated inside your repositories remai
 ## Input Formats `skill-adapter` Accepts
 
 - **Local directory:** `/path/to/skill-dir` (or an existing installed skill folder)
+- **Standalone file:** `/path/to/SKILL.md` or a raw `SKILL.md` URL (unprovided companion files cannot be verified)
 - **GitHub repository or subdirectory URL:** `https://github.com/<owner>/<repo>` or `https://github.com/<owner>/<repo>/tree/main/skills/<name>`
 - **Multi-skill / plugin bundle:** Repositories containing `plugin.json`, `.claude-plugin/`, `hooks/`, or multiple `skills/*/` folders (`skill-adapter` lists discovering skills and scopes which one to adapt)
 - **Existing adapted skill (for updates):** Provide both the upstream source and your local adapted directory to run a three-way re-adaptation ([readapt-guide.md](../skills/skill-adapter/references/readapt-guide.md))
